@@ -17,14 +17,14 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.6
+VERSION=0.7
 AUTHOR="Ashlee Young"
 MODIFIED="January 10, 2017"
-JAVA_VERSION=1.7
-ANT_VERSION=1.9.6
-MAVEN_VERSION=3.3.3
+JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
+ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
+MAVEN_VERSION=3.3.9
 MAVENURL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-src.tar.gz"
-PMD_VERSION=5.5.0
+PMD_VERSION=5.5.2
 export PROJECTROOT=$(pwd)
 export BUILDROOT="$PROJECTROOT"/build
 export BINROOT="$PROJECTROOT"/bin
@@ -57,7 +57,11 @@ detect_os() {
     get_os_name=$(hostnamectl | grep Operating\ System \
         | awk {'print $3'})
     if [ "$get_os_name" = "SUSE" ]; then
-        echo - OS is Suse 
+        echo - OS is SLES 
+        export JAVA_HOME=/usr/lib64/jvm/java
+        export TOOLXML=toolchains.xml.suse
+    elif [ "$get_os_name" = "openSUSE" ]; then
+        echo - OS is openSUSE 
         export JAVA_HOME=/usr/lib64/jvm/java
         export TOOLXML=toolchains.xml.suse
     elif [ "$get_os_name" = "Red" ]; then
@@ -221,8 +225,10 @@ install_maven() {
             printf "Maven version $MAVEN_VERSION is being installed in: \n"
             printf "$MAVENROOT \n\n"
             sleep 3
-            wget "$MAVENURL"
-            tar xzvf apache-maven-$MAVEN_VERSION-src.tar.gz
+            if [ ! -f "$SRCROOT/apache-maven-$MAVEN_VERSION-src.tar.gz" ]; then
+                wget -P "$SRCROOT" "$MAVENURL"
+            fi
+            tar xzvf "$SRCROOT"/apache-maven-$MAVEN_VERSION-src.tar.gz
             cd "$MAVENROOT"/apache-maven-$MAVEN_VERSION
             ant
             cd "$PROJECTROOT" 
@@ -237,32 +243,27 @@ install_maven() {
 ##### End Install Maven #####
 
 ##### Install PMD #####
-patch_pmd() {
-    if [ ! -d "$PMDSRC" ]; then
-        cd "$SRCROOT"
-        if [ -d "$PROJECTROOT"/.git ]; then
-            git submodule add https://github.com/pmd/pmd
-        else
-            git clone https://github.com/pmd/pmd
+install_pmd() {
+    if [ ! -d "$PMDBUILD"/pmd-dist/target/bin ]; then
+        printf "While you may or may not have PMD installed, our supported version is not yet installed.\n"         
+        if ask "May we install it?"; then
+            if [ ! -d "$PMDSRC" ]; then
+                cd "$SRCROOT"
+                git clone https://github.com/pmd/pmd
+                cd "$PMDSRC"
+                git checkout tags/pmd_releases/"$PMD_VERSION"
+            fi
+            if [ ! -d "$PMDBUILD" ]; then
+                cp -r "$PMDSRC" "$BUILDROOT"/.
+            fi
+            if [ ! -f ~/.m2/toolchains.xml ]; then
+                cp -v "$PROJECTROOT"/configs/"$TOOLXML" ~/.m2/toolchains.xml
+            fi
+            cd "$PMDBUILD"
+            mvn clean package
+            echo - PMD version "$PMD_VERSION" has been built at:
+            echo "$PMDBUILD"/pmd-dist/target/bin
         fi
-        cd "$PMDSRC"
-        git checkout tags/pmd_releases/"$PMD_VERSION"
-    fi
-    if [ ! -d "$PMDBUILD" ]; then
-        echo - Setting up PMD build...
-        cp -r "$PMDSRC" "$BUILDROOT"/.
-    fi
-}
-
-build_pmd() {
-    if [ ! -d "$PMDBUILD"/pmd-dist/target ]; then
-        if [ ! -f ~/.m2/toolchains.xml ]; then
-            cp -v $SRCROOT/configs/"$TOOLXML" ~/.m2/toolchains.xml
-        fi
-        cd "$PMDBUILD"
-        mvn clean package
-        echo - PMD version "$PMD_VERSION" has been built at:
-        echo "$PMDBUILD"/pmd-dist/target/bin
     else
         echo - PMD version "$PMD_VERSION" has been built at:
         echo "$PMDBUILD"/pmd-dist/target/bin
@@ -278,7 +279,6 @@ main() {
     check_directories
     install_ant
     install_maven
-    patch_pmd
-    build_pmd
+    install_pmd
 }
 main

@@ -1,3 +1,0 @@
-[submodule "src/pmd"]
-	path = src/pmd
-	url = https://github.com/pmd/pmd
