@@ -17,19 +17,22 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.7
+VERSION=0.8
 AUTHOR="Ashlee Young"
-MODIFIED="January 10, 2017"
+MODIFIED="January 18, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
 ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
 MAVEN_VERSION=3.3.9
 MAVENURL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/$MAVEN_VERSION/apache-maven-$MAVEN_VERSION-src.tar.gz"
 PMD_VERSION=5.5.2
+EXPAT_VERSION=2.0.1
+RATS_VERSION=2.4
 export PROJECTROOT=$(pwd)
 export BUILDROOT="$PROJECTROOT"/build
 export BINROOT="$PROJECTROOT"/bin
 export SRCROOT="$PROJECTROOT"/src
 export PATCHROOT="$PROJECTROOT"/patches
+export CONFIGSROOT="$PROJECTROOT"/configs
 export ANTROOT="$BUILDROOT"/ant
 export ANT_HOME="$ANTROOT"/apache-ant-$ANT_VERSION
 export MAVENROOT="$BUILDROOT"/maven
@@ -37,6 +40,12 @@ export M2_HOME=$BUILDROOT/maven/build
 export M2=$M2_HOME/bin
 export PMDSRC="$SRCROOT"/pmd
 export PMDBUILD="$BUILDROOT"/pmd
+export ANTEATERSRC="$SRCROOT"/anteater
+export ANTEATERBUILD="$BUILDROOT"/anteater
+export RATSSRC="$SRCROOT"/rats-"$RATS_VERSION".tgz
+export EXPATSRC="$SRCROOT"/expat-"$EXPAT_VERSION".tar.gz
+export RATSBUILD="$BUILDROOT"/rats-"$RATS_VERSION"
+export EXPATBUILD="$BUILDROOT"/expat-"$EXPAT_VERSION"
 ##### End Settings #####
 
 ##### Version #####
@@ -244,7 +253,7 @@ install_maven() {
 
 ##### Install PMD #####
 install_pmd() {
-    if [ ! -d "$PMDBUILD"/pmd-dist/target/bin ]; then
+    if [ ! -f "$PMDBUILD"/pmd-dist/target/pmd-bin-"$PMD_VERSION".zip ]; then
         printf "While you may or may not have PMD installed, our supported version is not yet installed.\n"         
         if ask "May we install it?"; then
             if [ ! -d "$PMDSRC" ]; then
@@ -260,16 +269,86 @@ install_pmd() {
                 cp -v "$PROJECTROOT"/configs/"$TOOLXML" ~/.m2/toolchains.xml
             fi
             cd "$PMDBUILD"
-            mvn clean package
+            mvn clean install 
+            cd "$PMDBUILD"/pmd-dist/target
+            if [ -f pmd-bin-"$PMD_VERSION".zip ]; then
+                unzip pmd-bin-"$PMD_VERSION".zip
+                cd pmd-bin-"$PMD_VERSION"/bin
+                export PATH="$PATH":"$(pwd)"
+            fi
             echo - PMD version "$PMD_VERSION" has been built at:
-            echo "$PMDBUILD"/pmd-dist/target/bin
+            echo "$PMDBUILD"/pmd-dist/target/
         fi
     else
         echo - PMD version "$PMD_VERSION" has been built at:
-        echo "$PMDBUILD"/pmd-dist/target/bin
+        echo "$PMDBUILD"/pmd-dist/target/
     fi
 }
 ##### End Install PMD #####
+
+##### Install RATS #####
+install_expat() {
+    if [ ! -f "$EXPATSRC" ]; then
+        wget -P "$SRCROOT" http://downloads.sourceforge.net/project/expat/expat/"$EXPAT_VERSION"/expat-"$EXPAT_VERSION".tar.gz
+    fi
+    if [ ! -d "$EXPATBUILD" ]; then
+        printf "While you may or may not have expat installed, our supported version is not yet installed.\n"         
+        if ask "May we install it?"; then
+            cd "$BUILDROOT"
+            tar -xvf "$EXPATSRC"
+            cd "$EXPATBUILD"
+            ./configure --prefix="$PROJECTROOT" && make && make install
+            export PATH="$PATH":"$PROJECTROOT"/bin
+            echo - expat version "$EXPAT_VERSION" has been built at:
+            echo "$PROJECTROOT"
+        fi
+    fi
+}
+
+install_rats() {
+    if [ ! -f "$RATSSRC" ]; then
+        wget -P "$SRCROOT" https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/rough-auditing-tool-for-security/rats-"$RATS_VERSION".tgz
+    fi
+    if [ ! -d "$RATSBUILD" ]; then
+        printf "While you may or may not have RATS installed, our supported version is not yet installed.\n"         
+        if ask "May we install it?"; then
+            cd "$BUILDROOT"
+            tar -xvf "$RATSSRC"
+            cd "$RATSBUILD"
+            ./configure --prefix="$PROJECTROOT" && make && make install
+            export PATH="$PATH":"$PROJECTROOT"/bin
+            echo - RATS version "$RATS_VERSION" has been built at:
+            echo "$PROJECTROOT"
+        fi
+    fi
+}
+##### End Install RATS #####
+
+##### Install Anteater #####
+install_anteater() {
+    if [ ! -d "$ANTEATERSRC" ]; then
+        cd "$SRCROOT"
+        git clone https://github.com/lukehinds/anteater
+        cd anteater
+        git checkout 134759d5345c3cf239a1f418c61fb80436badc4e
+    fi
+    if [ ! -d "$ANTEATERBUILD" ]; then
+        printf "While you may or may not have Anteater installed, our supported version is not yet installed.\n" 
+        if ask "May we install it?"; then
+            cp -r "$ANTEATERSRC" "$BUILDROOT"/.
+            cd "$ANTEATERBUILD"
+            cp "$CONFIGSROOT"/anteater.conf "$ANTEATERBUILD"
+            # sudo pip install virtualenv ## This is a sudo prerequisite 
+            virtualenv env
+            source env/bin/activate
+            pip install -r requirements.txt
+            pip install bandit
+            python setup.py install
+        fi
+    fi
+}
+##### End Install Anteater #####
+
 
 main() {
     display_version
@@ -280,5 +359,6 @@ main() {
     install_ant
     install_maven
     install_pmd
+    install_anteater
 }
 main
