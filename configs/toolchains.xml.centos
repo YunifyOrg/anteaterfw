@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF8"?>
+<toolchains>
+  <!-- place this file in ${user.home}/.m2/toolchains.xml -->
+
+  <toolchain>
+    <type>jdk</type>
+    <provides>
+      <version>1.7</version>
+    </provides>
+    <configuration>
+      <jdkHome>/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.121-2.6.8.0.el7_3.x86_64</jdkHome>
+    </configuration>
+  </toolchain>
+</toolchains>

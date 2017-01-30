@@ -17,9 +17,9 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.8
+VERSION=0.9
 AUTHOR="Ashlee Young"
-MODIFIED="January 18, 2017"
+MODIFIED="January 30, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
 ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
 MAVEN_VERSION=3.3.9
@@ -46,6 +46,8 @@ export RATSSRC="$SRCROOT"/rats-"$RATS_VERSION".tgz
 export EXPATSRC="$SRCROOT"/expat-"$EXPAT_VERSION".tar.gz
 export RATSBUILD="$BUILDROOT"/rats-"$RATS_VERSION"
 export EXPATBUILD="$BUILDROOT"/expat-"$EXPAT_VERSION"
+export VENVSRC="$SRCROOT"/virtualenv
+export VENVBUILD="$BUILDROOT"/virtualenv
 ##### End Settings #####
 
 ##### Version #####
@@ -75,13 +77,15 @@ detect_os() {
         export TOOLXML=toolchains.xml.suse
     elif [ "$get_os_name" = "Red" ]; then
         echo - OS is Red Hat Enterprise Linux 
+        export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.121-2.6.8.0.el7_3.x86_64
+        export TOOLXML=toolchains.xml.centos
     elif [ "$get_os_name" = "CentOS" ]; then
         echo - OS is CentOS 
+        export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.121-2.6.8.0.el7_3.x86_64
+        export TOOLXML=toolchains.xml.centos
     elif [ "$get_os_name" = "Ubuntu" ]; then
         echo - OS is Ubuntu 
         java_jdk="openjdk-8-jdk"
-    elif [ "$get_os_name" = "Fedora" ]; then
-        echo - OS is Fedora 
     else
         echo - OS is unknown
     fi
@@ -323,6 +327,40 @@ install_rats() {
     fi
 }
 ##### End Install RATS #####
+
+##### Install PIP #####
+install_pip() { #Needs to be installed as Root, so it's not called by default
+    if type -p pip; then
+        _pip=pip
+    else
+        printf "While you may or may not have Python-pip installed, our supported version is not yet installed.\n"
+        if ask "May we install it?"; then
+            wget -P "$SRCROOT" https://bootstrap.pypa.io/get-pip.py
+            cd "$SRCROOT"
+            sudo python get-pip.py
+        fi
+    fi
+}
+##### End Install PIP #####
+
+##### Install Virtualenv #####
+install_virtualenv() { #Needs to be installed as Root, so it's not called by default
+    if type -p virtualenv; then
+        _virtualenv=virtualenv
+    else
+        printf "While you may or may not have virtualenv installed, our supported version is not yet installed.\n"
+        if ask "May we install it?"; then
+            cd "$SRCROOT"
+            git clone https://github.com/pypa/virtualenv
+            cd "$VENVSRC"
+            git checkout c1ef9e29bfda9f5b128476d0c6d865ffe681b3fb
+            cp -r "$VENVSRC" "$BUILDROOT"
+            cd "$VENVBUILD"
+            sudo python setup.py install
+        fi
+    fi
+}
+##### End Install Virtualenv #####
 
 ##### Install Anteater #####
 install_anteater() {
