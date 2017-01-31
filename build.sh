@@ -17,7 +17,7 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.9.1
+VERSION=0.9.2
 AUTHOR="Ashlee Young"
 MODIFIED="January 30, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
@@ -85,6 +85,8 @@ detect_os() {
         export TOOLXML=toolchains.xml.centos
     elif [ "$get_os_name" = "Ubuntu" ]; then
         echo - OS is Ubuntu 
+        export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+        export TOOLXML=toolchains.xml.ubuntu
         java_jdk="openjdk-8-jdk"
     else
         echo - OS is unknown
