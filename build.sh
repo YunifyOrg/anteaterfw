@@ -17,9 +17,9 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.9.3
+VERSION=0.9.4
 AUTHOR="Ashlee Young"
-MODIFIED="January 30, 2017"
+MODIFIED="January 31, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
 ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
 MAVEN_VERSION=3.3.9
@@ -395,11 +395,14 @@ install_anteater() {
             cp -r "$ANTEATERSRC" "$BUILDROOT"/.
             cd "$ANTEATERBUILD"
             cp "$CONFIGSROOT"/anteater.conf "$ANTEATERBUILD"
-            # sudo pip install virtualenv ## This is a sudo prerequisite 
+            if [ -n "$WORKSPACE" ]; then
+                sed -i "s|REPLACE|$WORKSPACE|g" "$ANTEATERBUILD"/anteater.conf
+            else
+                sed -i "s|REPLACE|.|g" "$ANTEATERBUILD"/anteater.conf
+            fi
             virtualenv env
             source env/bin/activate
             pip install -r requirements.txt
-            #pip install bandit
             python setup.py install
         fi
     fi
