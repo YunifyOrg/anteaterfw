@@ -17,7 +17,7 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.9.2
+VERSION=0.9.3
 AUTHOR="Ashlee Young"
 MODIFIED="January 30, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
@@ -48,6 +48,8 @@ export RATSBUILD="$BUILDROOT"/rats-"$RATS_VERSION"
 export EXPATBUILD="$BUILDROOT"/expat-"$EXPAT_VERSION"
 export VENVSRC="$SRCROOT"/virtualenv
 export VENVBUILD="$BUILDROOT"/virtualenv
+export BANDITSRC="$SRCROOT"/bandit
+export BANDITBUILD="$BUILDROOT"/bandit
 ##### End Settings #####
 
 ##### Version #####
@@ -83,11 +85,10 @@ detect_os() {
         echo - OS is CentOS 
         export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.121-2.6.8.0.el7_3.x86_64
         export TOOLXML=toolchains.xml.centos
-    elif [ "$get_os_name" = "Ubuntu" ]; then
-        echo - OS is Ubuntu 
-        export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
-        export TOOLXML=toolchains.xml.ubuntu
-        java_jdk="openjdk-8-jdk"
+    # elif [ "$get_os_name" = "Ubuntu" ]; then #There seems to be an Ubuntu java issue
+    #     echo - OS is Ubuntu 
+    #     export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+    #     export TOOLXML=toolchains.xml.ubuntu
     else
         echo - OS is unknown
     fi
@@ -345,6 +346,22 @@ install_pip() { #Needs to be installed as Root, so it's not called by default
 }
 ##### End Install PIP #####
 
+##### Install Bandit #####
+install_bandit() { #Needs to be installed as Root, so it's not called by default
+    if type -p bandit; then
+        _bandit=bandit
+    else
+        printf "While you may or may not have Bandit installed, our supported version is not yet installed.\n"
+        if ask "May we install it?"; then
+            wget -P "$SRCROOT" https://github.com/openstack/bandit
+            cp -r "$BANDITSRC" "$BUILDROOT"
+            cd "$BANDITBUILD"
+            sudo pip install bandit
+        fi
+    fi
+}
+##### End Install Bandit #####
+
 ##### Install Virtualenv #####
 install_virtualenv() { #Needs to be installed as Root, so it's not called by default
     if type -p virtualenv; then
@@ -382,7 +399,7 @@ install_anteater() {
             virtualenv env
             source env/bin/activate
             pip install -r requirements.txt
-            pip install bandit
+            #pip install bandit
             python setup.py install
         fi
     fi
@@ -399,8 +416,10 @@ main() {
     install_ant
     install_maven
     install_pmd
-    #install_pip
-    #install_virtualenv
+    install_pip
+    install_virtualenv
+    install_rats
+    install_bandit
     install_anteater
 }
 main
