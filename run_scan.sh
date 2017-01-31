@@ -17,9 +17,9 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.2
+VERSION=0.3
 AUTHOR="Ashlee Young"
-MODIFIED="January 30, 2017"
+MODIFIED="January 31, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
 ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
 MAVEN_VERSION=3.3.9
@@ -60,6 +60,56 @@ display_version() {
 }
 ##### End Version #####
 
+##### Ask Function #####
+# This is a common function I use for prompting a yes/no response
+ask() {
+    while true; do
+        if [ "${2:-}" = "Y" ]; then
+            prompt="Y/n"
+            default=Y
+        elif [ "${2:-}" = "N" ]; then
+            prompt="y/N"
+            default=N
+        else
+            prompt="y/n"
+            default=
+        fi
+        # Ask the question
+        if [ "$MODE" = "auto" ]; then
+            REPLY="Y"
+        else
+            read -p "$1 [$prompt] " REPLY
+        fi
+        # Default?
+        if [ -z "$REPLY" ]; then
+            REPLY=$default
+        fi
+        # Check if the reply is valid
+        case "$REPLY" in
+            Y*|y*) return 0 ;;
+            N*|n*) return 1 ;;
+        esac
+    done
+}
+##### End Ask Function #####
+
+##### Check for WORKSPACE #####
+# The WORKSPACE variable can be set to establish the Jenkins path to where the repos are cloned. 
+# if not set, the path should be relative to the PROJECTROOT.
+check_variable() {
+    if [ -n "$WORKSPACE" ]; then
+        check_if_set="$(cat "$ANTEATERBUILD"/anteater.conf | grep "$WORKSPACE" | wc -l)"
+        if [ ! "$check_if_set" -gt 0 ]; then
+            printf "Your WORKSPACE variable is set, but not reflected in your anteater.conf file \n"
+            if ask "Would you like us to change it?"; then
+                cp "$CONFIGSROOT"/anteater.conf "$ANTEATERBUILD"
+                sed -i "s|REPLACE|$WORKSPACE|g" "$ANTEATERBUILD"/anteater.conf
+            fi
+        fi
+    fi
+}
+##### End Check for WORKSPACE #####
+
 ##### Get repo #####
 scan_repo() {
     url="$1"
@@ -67,22 +117,16 @@ scan_repo() {
     if [ ! -d "$REPOSDIR" ]; then
         mkdir "$REPOSDIR"
     fi
-    # if [ -z "$1" ]; then
-    #     printf "Please enter the URL for the repo to scan! \n"
-    # else
-        #cd "$REPOSDIR"
-        #echo "$url" > "$ANTEATERBUILD"/reponame.txt
-        #cat ../reponame.txt | xargs git clone
         cd "$ANTEATERBUILD"
         source env/bin/activate
         anteater scan all
-    # fi
 }
 ##### End Get repo #####
 
 
 main() {
     display_version
+    check_variable
     scan_repo
     
 }
