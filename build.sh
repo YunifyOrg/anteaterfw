@@ -17,7 +17,7 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.9
+VERSION=0.9.1
 AUTHOR="Ashlee Young"
 MODIFIED="January 30, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
@@ -397,6 +397,8 @@ main() {
     install_ant
     install_maven
     install_pmd
+    #install_pip
+    #install_virtualenv
     install_anteater
 }
 main
