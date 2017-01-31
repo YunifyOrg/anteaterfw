@@ -17,9 +17,9 @@
 # limitations under the License.
 
 ##### Settings #####
-VERSION=0.1
+VERSION=0.2
 AUTHOR="Ashlee Young"
-MODIFIED="January 18, 2017"
+MODIFIED="January 30, 2017"
 JAVA_VERSION=1.7 #PMD will not currently build with Java version other than 1.7
 ANT_VERSION=1.9.8 #Ant version 1.10.0 and above does not appear to work with Java 1.7
 MAVEN_VERSION=3.3.9
@@ -70,9 +70,9 @@ scan_repo() {
     # if [ -z "$1" ]; then
     #     printf "Please enter the URL for the repo to scan! \n"
     # else
-        cd "$REPOSDIR"
+        #cd "$REPOSDIR"
         #echo "$url" > "$ANTEATERBUILD"/reponame.txt
-        cat ../reponame.txt | xargs git clone
+        #cat ../reponame.txt | xargs git clone
         cd "$ANTEATERBUILD"
         source env/bin/activate
         anteater scan all
